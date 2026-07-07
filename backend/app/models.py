@@ -121,6 +121,11 @@ class QuoteRequest(BaseModel):
     message: str
 
 
+class QuoteSnapshot(BaseModel):
+    part: UploadedPart
+    supplier: SupplierRecord
+
+
 class WaitlistSignup(BaseModel):
     email: str
     team_name: str
@@ -135,4 +140,3 @@ class IterationMetrics(BaseModel):
     estimated_days_saved: Optional[float]
     open_finding_count: int
     quote_request_count: int
-

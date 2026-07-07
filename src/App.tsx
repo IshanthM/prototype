@@ -130,7 +130,6 @@ export function App() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [parts, setParts] = useState<Part[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [matchedSuppliers, setMatchedSuppliers] = useState<Supplier[]>([]);
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState("");
   const [selectedPartId, setSelectedPartId] = useState("");
@@ -173,10 +172,6 @@ export function App() {
       setSelectedPartId("");
     }
   }, [selectedProject?.id]);
-
-  useEffect(() => {
-    if (selectedPart) void loadMatchedSuppliers(selectedPart.id);
-  }, [selectedPart?.id]);
 
   useEffect(() => {
     if (!selectedPart?.findings.length) {
@@ -234,10 +229,6 @@ export function App() {
     if (!selectedPartId || !nextParts.some((part) => part.id === selectedPartId)) {
       setSelectedPartId(nextParts[nextParts.length - 1].id);
     }
-  }
-
-  async function loadMatchedSuppliers(partId: string) {
-    setMatchedSuppliers(await request<Supplier[]>(`/parts/${partId}/suppliers`));
   }
 
   async function ensureProject() {
@@ -302,10 +293,11 @@ export function App() {
       body.append("revision", uploadForm.revision);
       body.append("file", file);
       const part = await request<Part>(`/projects/${project.id}/parts`, { method: "POST", body });
-      setParts((current) => [...current, part]);
+      const nextParts = [...parts, part];
+      setParts(nextParts);
+      setMetrics((current) => localMetrics(project, nextParts, current?.quote_request_count ?? 0));
       setSelectedPartId(part.id);
       setSelectedFindingId(part.findings[0]?.id ?? "");
-      await refreshProjectData(project.id);
       setShowUpload(false);
       setMessageTone("success");
       setMessage("Part uploaded and checked.");
@@ -316,23 +308,28 @@ export function App() {
 
   async function updateFinding(finding: Finding, status: FindingStatus) {
     if (!selectedPart) return;
-    try {
-      const updated = await request<Part>(`/parts/${selectedPart.id}/findings/${finding.id}?status=${status}`, { method: "PATCH" });
-      setParts((current) => current.map((part) => (part.id === updated.id ? updated : part)));
-      setSelectedFindingId(finding.id);
-      setMessageTone("success");
-      setMessage(`Finding marked ${status}.`);
-    } catch {
-      // request() already surfaced the error.
-    }
+    const nextParts = parts.map((part) => (
+      part.id === selectedPart.id
+        ? { ...part, findings: part.findings.map((item) => (item.id === finding.id ? { ...item, status } : item)) }
+        : part
+    ));
+    setParts(nextParts);
+    if (selectedProject) setMetrics((current) => localMetrics(selectedProject, nextParts, current?.quote_request_count ?? 0));
+    setSelectedFindingId(finding.id);
+    setMessageTone("success");
+    setMessage(`Finding marked ${status}.`);
   }
 
   async function generateQuote(supplier: Supplier) {
     if (!selectedPart) return;
     try {
-      const generated = await request<QuoteRequest>(`/parts/${selectedPart.id}/quote-request/${supplier.id}`, { method: "POST" });
+      const generated = await request<QuoteRequest>("/quote-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ part: selectedPart, supplier }),
+      });
       setQuote(generated);
-      if (selectedProject) await refreshProjectData(selectedProject.id);
+      if (selectedProject) setMetrics((current) => localMetrics(selectedProject, parts, (current?.quote_request_count ?? 0) + 1));
       setMessageTone("success");
       setMessage(`Quote request drafted for ${supplier.name}.`);
     } catch {
@@ -405,7 +402,6 @@ export function App() {
       setSelectedPartId={setSelectedPartId}
       metrics={metrics}
       suppliers={suppliers}
-      matchedSuppliers={matchedSuppliers}
       quote={quote}
       selectedFinding={selectedFinding}
       setSelectedFindingId={setSelectedFindingId}
@@ -497,7 +493,6 @@ function Dashboard(props: {
   setSelectedPartId: (id: string) => void;
   metrics: Metrics | null;
   suppliers: Supplier[];
-  matchedSuppliers: Supplier[];
   quote: QuoteRequest | null;
   selectedFinding?: Finding;
   setSelectedFindingId: (id: string) => void;
@@ -509,7 +504,7 @@ function Dashboard(props: {
 }) {
   const selectedPart = props.selectedPart;
   const dimensions = selectedPart?.geometry.dimensions_mm ?? {};
-  const matched = selectedPart ? props.matchedSuppliers : props.suppliers;
+  const matched = selectedPart ? props.suppliers.filter((supplier) => supplier.processes.includes(selectedPart.recommendation.primary_process)) : props.suppliers;
   const openCount = selectedPart?.findings.filter((finding) => finding.status === "open").length ?? 0;
   const supplierRows = matched.length ? matched : props.suppliers;
 
@@ -815,6 +810,18 @@ function relativeDate(value: string) {
 
 function formatMetric(value: number | null | undefined, fallback: string) {
   return typeof value === "number" ? value.toFixed(1) : fallback;
+}
+
+function localMetrics(project: Project, projectParts: Part[], quoteCount: number): Metrics {
+  const openFindings = projectParts.reduce((count, part) => count + part.findings.filter((finding) => finding.status === "open").length, 0);
+  return {
+    revision_count: projectParts.length,
+    average_hours_between_uploads: projectParts.length > 1 ? 24 : null,
+    baseline_iteration_days: project.baseline_iteration_days,
+    estimated_days_saved: projectParts.length ? Math.max(0, project.baseline_iteration_days - 4.2) : null,
+    open_finding_count: openFindings,
+    quote_request_count: quoteCount,
+  };
 }
 
 function findingLocation(finding: Finding) {

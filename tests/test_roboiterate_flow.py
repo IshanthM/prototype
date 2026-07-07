@@ -91,6 +91,10 @@ def test_stl_upload_runs_dfm_supplier_quote_and_metrics(tmp_path):
     assert metrics.json()["revision_count"] == 1
     assert metrics.json()["quote_request_count"] == 1
 
+    stateless_quote = client.post("/api/quote-request", json={"part": part, "supplier": suppliers.json()[0]})
+    assert stateless_quote.status_code == 200, stateless_quote.text
+    assert "Thin mounting plate" in stateless_quote.json()["message"]
+
 
 def test_step_upload_extracts_units_and_cnc_signals(tmp_path):
     configure_tmp_storage(tmp_path)
@@ -131,4 +135,3 @@ def test_waitlist_capture(tmp_path):
     response = client.post("/api/waitlist", json={"email": "team@example.com", "team_name": "FTC Test", "notes": "Need fast plates."})
     assert response.status_code == 200
     assert response.json()["email"] == "team@example.com"
-

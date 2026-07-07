@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
-from .models import FindingStatus, ProjectCreate, ProjectRecord, QuoteRequest, SupplierCreate, SupplierRecord, UploadedPart, WaitlistSignup
+from .models import FindingStatus, ProjectCreate, ProjectRecord, QuoteRequest, QuoteSnapshot, SupplierCreate, SupplierRecord, UploadedPart, WaitlistSignup
 from .services import (
     compute_metrics,
     create_default_suppliers,
@@ -17,7 +17,7 @@ from .services import (
     update_finding_status,
     upload_part,
 )
-from .storage import create_project, list_models, read_model
+from .storage import create_project, list_models, read_model, utc_now
 
 
 @asynccontextmanager
@@ -62,7 +62,15 @@ def api_project_metrics(project_id: str):
         project = read_model("project", project_id, ProjectRecord)
         return compute_metrics(project)
     except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="project not found")
+        return {
+            "project_id": project_id,
+            "revision_count": 0,
+            "average_hours_between_uploads": None,
+            "baseline_iteration_days": 14.0,
+            "estimated_days_saved": None,
+            "open_finding_count": 0,
+            "quote_request_count": 0,
+        }
 
 
 @app.post("/api/projects/{project_id}/parts")
@@ -74,9 +82,11 @@ def api_upload_part(
 ):
     try:
         project = read_model("project", project_id, ProjectRecord)
-        return upload_part(project, file, part_name, revision)
     except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="project not found")
+        now = utc_now()
+        project = ProjectRecord(id=project_id, name="Serverless upload", team_name="Robotics Team", baseline_iteration_days=14.0, created_at=now, updated_at=now)
+    try:
+        return upload_part(project, file, part_name, revision)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
@@ -116,6 +126,11 @@ def api_quote_request(part_id: str, supplier_id: str):
         return generate_quote_request(part, supplier)
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="part or supplier not found")
+
+
+@app.post("/api/quote-request")
+def api_quote_request_snapshot(payload: QuoteSnapshot):
+    return generate_quote_request(payload.part, payload.supplier)
 
 
 @app.get("/api/quote-requests")

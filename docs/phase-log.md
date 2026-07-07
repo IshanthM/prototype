@@ -43,6 +43,7 @@ Diagnosis:
 - Vercel had no API-base environment variables configured, which is expected for same-origin API routing.
 - FastAPI was deployed as Vercel function `api/index`; direct production `POST /api/projects` and STL upload both returned real data.
 - The failing user path was a dashboard state bug: the landing CTA opened an upload screen with no selected project, leaving Analyze Part disabled with no useful guidance.
+- A later production browser check exposed a second serverless issue: follow-up reads such as `/api/parts/{id}/suppliers` could hit a function instance without the uploaded `/tmp` file and return `404 part not found`.
 - The old app did not visually match the dashboard mockup; it used small generic cards instead of the rail/table/inspector layout shown in the screenshot.
 
 Changes:
@@ -50,6 +51,7 @@ Changes:
 - Reworked the dashboard to match the mockup structure: dark project rail, top status bar, model preview, geometry facts, findings table, process cards, supplier table, iteration timeline, and finding inspector.
 - Added project auto-creation/selection for the demo upload path.
 - Added visible API error handling instead of silent failures.
+- Removed the upload flow's dependence on cross-request `/tmp` reads by using the upload response in frontend state, local supplier matching, local finding resolution, and a stateless quote endpoint.
 - Added explicit TypeScript type checking to the smoke script.
 
 Validation:

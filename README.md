@@ -37,7 +37,8 @@ This runs backend regression tests, TypeScript type checking, and the Vite produ
 - Frontend API base is intentionally same-origin `"/api"`; Vercel has no required API-base environment variable.
 - Vercel serves FastAPI through `api/index.py` as a Python serverless function, not a persistent server.
 - The demo upload flow now creates/selects a project before analysis, surfaces API failures visibly, and keeps the Analyze Part action disabled only until a file is present.
-- Vercel JSON storage is writable under `/tmp/roboiterate-data` but ephemeral. Use hosted Postgres and object storage before relying on production persistence.
+- The upload-to-results path does not depend on rereading `/tmp` by id after upload; the frontend uses the returned part analysis, local supplier matching, local finding resolution, and a stateless quote endpoint.
+- Vercel JSON storage is writable under `/tmp/roboiterate-data` but ephemeral. Use hosted Postgres and object storage before relying on production persistence or reload-safe history.
 
 ## Current Scope
 

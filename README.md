@@ -30,7 +30,14 @@ Open `http://127.0.0.1:3000`.
 npm run smoke
 ```
 
-This runs backend regression tests and the Vite production build.
+This runs backend regression tests, TypeScript type checking, and the Vite production build.
+
+## Deployment Diagnosis Notes
+
+- Frontend API base is intentionally same-origin `"/api"`; Vercel has no required API-base environment variable.
+- Vercel serves FastAPI through `api/index.py` as a Python serverless function, not a persistent server.
+- The demo upload flow now creates/selects a project before analysis, surfaces API failures visibly, and keeps the Analyze Part action disabled only until a file is present.
+- Vercel JSON storage is writable under `/tmp/roboiterate-data` but ephemeral. Use hosted Postgres and object storage before relying on production persistence.
 
 ## Current Scope
 

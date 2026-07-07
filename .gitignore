@@ -1,0 +1,17 @@
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+
+# Node/Vite
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Local runtime data and downloaded tools
+data/
+.tools/
+.vercel/

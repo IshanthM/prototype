@@ -35,7 +35,7 @@ Known limitations:
 
 ## Deployment Repair
 
-Status: Complete locally; pending production redeploy.
+Status: Complete and redeployed to production.
 
 Diagnosis:
 
@@ -56,3 +56,4 @@ Validation:
 
 - `npm run smoke` passed: backend tests, type check, and Vite production build.
 - Local Playwright flow uploaded a sample STL through the UI, rendered DFM findings, populated the inspector, and drafted a quote request through the backend.
+- Production Playwright flow at `https://prototype-rho-khaki.vercel.app` uploaded a sample STL, received real geometry/finding JSON, rendered the inspector, and drafted a quote request with no failed API calls.

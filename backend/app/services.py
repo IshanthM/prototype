@@ -413,9 +413,8 @@ def compute_metrics(project: ProjectRecord) -> IterationMetrics:
 
 def save_waitlist(payload: WaitlistSignup) -> dict:
     item = {"id": new_id("wait"), "created_at": utc_now().isoformat(), **payload.model_dump()}
-    from .storage import collection_path, ensure_storage
+    from .storage import write_raw
 
-    ensure_storage()
-    collection_path("waitlist", item["id"]).write_text(__import__("json").dumps(item, indent=2))
+    write_raw("waitlist", item["id"], item)
     return item
 

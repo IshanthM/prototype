@@ -159,13 +159,13 @@ export function App() {
   );
 
   useEffect(() => {
-    void refreshProjects();
-    void loadSuppliers();
+    void refreshProjects().catch(() => undefined);
+    void loadSuppliers().catch(() => undefined);
   }, []);
 
   useEffect(() => {
     if (selectedProject) {
-      void refreshProjectData(selectedProject.id);
+      void refreshProjectData(selectedProject.id).catch(() => undefined);
     } else {
       setParts([]);
       setMetrics(null);
@@ -445,7 +445,7 @@ function Landing(props: {
           </div>
         </div>
         <div className="hero-media">
-          <img src="/assets/dashboard-concept.png" alt="RoboIterate dashboard concept" />
+          <SampleAnalysisPreview onTryLive={props.openDemoWorkspace} />
         </div>
       </section>
       <section className="workflow">
@@ -783,6 +783,43 @@ function FindingInspector({ finding, part, updateFinding, quote }: { finding?: F
 
 function InspectorBlock({ title, children }: { title: string; children: ReactNode }) {
   return <section className="inspector-block"><h4>{title}</h4><p>{children}</p></section>;
+}
+
+// This is real, reproducible output of the actual DFM engine (backend/app/services.py)
+// run against the bundled sample file used by the "Use sample STL" button in the
+// live demo workspace -- not a mockup. Click "Try it live" to reproduce it yourself.
+const sampleAnalysisFindings: { severity: Severity; title: string; detail: string }[] = [
+  { severity: "blocker" as Severity, title: "Units are unknown", detail: "STL files don't store units in their metadata. Confirm mm before quoting." },
+  { severity: "warning" as Severity, title: "Large flat FDM warp risk", detail: "180mm x 2mm thin plate is prone to warping on common FDM printers." },
+  { severity: "info" as Severity, title: "Likely sheet fabrication candidate", detail: "Flat geometry looks suitable for laser/waterjet/router workflows." },
+];
+
+function SampleAnalysisPreview({ onTryLive }: { onTryLive: () => void }) {
+  return (
+    <div className="sample-preview">
+      <div className="sample-preview-head">
+        <span className="sample-preview-tag">Real example output</span>
+        <span className="sample-preview-file">wheel_side_plate_v5.stl · 180 x 80 x 2 mm</span>
+      </div>
+      <div className="sample-preview-findings">
+        {sampleAnalysisFindings.map((finding) => (
+          <div key={finding.title} className="sample-finding">
+            <SeverityPill severity={finding.severity} />
+            <div>
+              <strong>{finding.title}</strong>
+              <p>{finding.detail}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="sample-preview-recommendation">
+        <span>Recommended process</span>
+        <strong>Laser Cut + Drill</strong>
+        <span>$20-$120 · 1-5 days</span>
+      </div>
+      <button className="primary sample-preview-cta" onClick={onTryLive}>Try it live with this file</button>
+    </div>
+  );
 }
 
 function Metric({ label, value, compact = false }: { label: string; value: string; compact?: boolean }) {

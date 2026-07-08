@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
@@ -28,9 +29,18 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(title="RoboIterate", version="0.2.0", lifespan=lifespan)
 
+# Local dev origins plus any explicit production origin(s) via env var, e.g.
+# ALLOWED_ORIGINS="https://prototype-rho-khaki.vercel.app" (comma-separated
+# for multiple). Previously this only allowed localhost, which meant any
+# deployment other than a perfectly same-origin setup could silently fail
+# CORS. allow_origin_regex additionally covers Vercel's preview-deployment
+# URLs, which change on every push.
+_extra_origins = [origin.strip() for origin in os.environ.get("ALLOWED_ORIGINS", "").split(",") if origin.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:3000", "http://localhost:3000"],
+    allow_origins=["http://127.0.0.1:3000", "http://localhost:3000", *_extra_origins],
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

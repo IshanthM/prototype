@@ -168,6 +168,82 @@ label {
   width: 100%;
 }
 
+.sample-preview {
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+}
+
+.sample-preview-head {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.sample-preview-tag {
+  background: #eef2ff;
+  border-radius: 999px;
+  color: #3949ab;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sample-preview-file {
+  color: #667085;
+  font-size: 13px;
+}
+
+.sample-preview-findings {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sample-finding {
+  align-items: flex-start;
+  background: #f8f9fc;
+  border-radius: 8px;
+  display: flex;
+  gap: 12px;
+  padding: 12px 14px;
+}
+
+.sample-finding strong {
+  display: block;
+  font-size: 14px;
+}
+
+.sample-finding p {
+  color: #667085;
+  font-size: 13px;
+  margin: 4px 0 0;
+}
+
+.sample-preview-recommendation {
+  align-items: center;
+  background: #101827;
+  border-radius: 8px;
+  color: #fff;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 14px 16px;
+}
+
+.sample-preview-recommendation span:first-child {
+  color: #9aa5b1;
+  font-size: 12px;
+}
+
+.sample-preview-cta {
+  width: 100%;
+}
+
 .metric-row {
   display: grid;
   gap: 10px;
@@ -813,7 +889,7 @@ label {
 .finding-row {
   display: grid;
   gap: 10px;
-  grid-template-columns: 90px 150px 155px 1fr 24px;
+  grid-template-columns: 90px minmax(0, 1.05fr) minmax(0, 0.95fr) minmax(0, 1.6fr) 24px;
 }
 
 .table-head {
@@ -843,14 +919,20 @@ label {
 .finding-row span,
 .finding-row strong {
   font-size: 12px;
+  min-width: 0;
 }
 
+.finding-row > strong,
 .finding-row > span:nth-of-type(2),
 .finding-row > span:nth-of-type(3) {
   color: #475467;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.finding-row > strong {
+  color: #1d2939;
 }
 
 .pill {
